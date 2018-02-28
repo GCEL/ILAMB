@@ -27,9 +27,12 @@ class ConfTWSA(Confrontation):
         # Now we overwrite some things which are different here
         self.regions        = ['global']
         self.layout.regions = self.regions
-
+        self._populateBasins()
+        
+    def _populateBasins(self):
         # Adding a member variable called basins, add them as regions
         r = Regions()
+        if "amazon" in r.regions: return
         nbasins = self.keywords.get("nbasins",30)
         self.basins = r.addRegionNetCDF4(os.path.join("/".join(self.source.split("/")[:-3]),"runoff/Dai/basins_0.5x0.5.nc"))[:nbasins]
         
@@ -65,6 +68,8 @@ class ConfTWSA(Confrontation):
             the variable context associated with the model result
 
         """
+        self._populateBasins()
+
         # get the observational data
         obs = Variable(filename       = self.source,
                        variable_name  = self.variable,
@@ -199,6 +204,8 @@ class ConfTWSA(Confrontation):
                         lon       = lon)
     
     def modelPlots(self,m):
+
+        self._populateBasins()
 
         # some of the plots can be generated using the standard
         # routine, with some modifications
