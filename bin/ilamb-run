@@ -282,6 +282,7 @@ def Confront(w,verbose=True,clean=False):
 
     # unpack the model and the confrontation
     m,c,master = w
+    c.master   = master
     
     # if the results file exists, skip this confrontation unless we want to clean
     if os.path.isfile(os.path.join(c.output_path,"%s_%s.nc" % (c.name,m.name))) and clean is False:
@@ -301,6 +302,7 @@ def Confront(w,verbose=True,clean=False):
 
     # if things do not work out, print the exception so the user has some idea
     except Exception as ex:
+        print format_exc()
         if verbose:
             print ("    {0:>%d} {1:<%d} %s%s%s" % (maxCL,maxML,FAIL,ex.__class__.__name__,ENDC)).format(c.longname,m.name)
             sys.stdout.flush()
@@ -310,7 +312,7 @@ def Confront(w,verbose=True,clean=False):
 
 def ModelPlots(w,verbose=True,skip_plots=False):
     m,c,master = w
-    print master
+    c.master   = master
     try:
         t0  = time.time()
         if c.limits is None: c.determinePlotLimits()
@@ -327,6 +329,7 @@ def ModelPlots(w,verbose=True,skip_plots=False):
             print ("    {0:>%d} {1:<%d} %sCompleted%s {2:>5.1f} s" % (maxCL,maxML,OK,ENDC)).format(c.longname,m.name,dt)
             sys.stdout.flush()
     except Exception as ex:
+        print format_exc()
         if verbose:
             print ("    {0:>%d} {1:<%d} %s%s%s" % (maxCL,maxML,FAIL,ex.__class__.__name__,ENDC)).format(c.longname,m.name)
             sys.stdout.flush()
