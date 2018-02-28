@@ -10,6 +10,7 @@ from ILAMB import ilamblib as il
 from traceback import format_exc
 import os,time,sys,argparse
 from mpi4py import MPI
+from mpi4py.futures import MPIPoolExecutor
 import numpy as np
 import datetime,glob
 
@@ -20,9 +21,11 @@ rank = comm.Get_rank()
 proc = np.zeros(size)
 
 # Some color constants for printing to the terminal
-OK   = '\033[92m'
-FAIL = '\033[91m'
-ENDC = '\033[0m'
+OK    = '\033[92m'
+FAIL  = '\033[91m'
+ENDC  = '\033[0m'
+maxCL = 45
+maxML = 20
 
 def InitializeModels(model_root,models=[],verbose=False,filter="",model_year=[]):
     """Initializes a list of models
@@ -260,137 +263,9 @@ def BuildLocalWorkList(M,C):
     # Evenly divide up the work among processes
     W = []
     for c in C:
-        for m in M:
-            W.append([m,c])
-    wpp    = float(len(W))/size
-    begin  = int(round( rank   *wpp))
-    end    = int(round((rank+1)*wpp))
-    localW = W[begin:end]
-
-    # Determine who is the master of each confrontation
-    for c in C:
-        sendbuf = np.zeros(size,dtype='int')
-        for w in localW:
-            if c is w[1]: sendbuf[rank] += 1
-        recvbuf = None
-        if rank == 0: recvbuf = np.empty([size, sendbuf.size],dtype='int')
-        comm.Gather(sendbuf,recvbuf,root=0)
-        if rank == 0:
-            numc = recvbuf.sum(axis=1)
-        else:
-            numc = np.empty(size,dtype='int')
-        comm.Bcast(numc,root=0)
-        if rank == numc.argmax():
-            c.master = True
-        else:
-            c.master = False
-
-    return localW
-
-def WorkConfront(W,verbose=False,clean=False):
-    """Performs the confrontation analysis
-
-    For each model-confrontation pair (m,c) in the input work list,
-    this routine will call c.confront(m) and keep track of the time
-    required as well as any exceptions which are thrown.
-
-    Parameters
-    ----------
-    W : list of (ILAMB.ModelResult.ModelResult, ILAMB.Confrontation.Confrontation) tuples
-        the list of work
-    verbose : bool, optional
-        enable to print output to the screen monitoring progress
-    clean : bool, optional
-        enable to perform the confrontation again, overwriting previous results
-
-    """
-    maxCL = 45; maxML = 20
-
-    # Run analysis on your local work model-confrontation pairs
-    for w in W:
-        m,c = w
-
-        # if the results file exists, skip this confrontation unless we want to clean
-        if os.path.isfile(os.path.join(c.output_path,"%s_%s.nc" % (c.name,m.name))) and clean is False:
-            if verbose:
-                print ("    {0:>%d} {1:<%d} %sUsingCachedData%s " % (maxCL,maxML,OK,ENDC)).format(c.longname,m.name)
-                sys.stdout.flush()
-            continue
-
-        # try to run the confrontation
-        try:
-            t0 = time.time()
-            c.confront(m)
-            dt = time.time()-t0
-            proc[rank] += dt
-            if verbose:
-                print ("    {0:>%d} {1:<%d} %sCompleted%s {2:>5.1f} s" % (maxCL,maxML,OK,ENDC)).format(c.longname,m.name,dt)
-                sys.stdout.flush()
-
-        # if things do not work out, print the exception so the user has some idea
-        except Exception as ex:
-            logger.debug("[%s][%s]\n%s" % (c.longname,m.name,format_exc()))
-            if verbose:
-                print ("    {0:>%d} {1:<%d} %s%s%s" % (maxCL,maxML,FAIL,ex.__class__.__name__,ENDC)).format(c.longname,m.name)
-
-def WorkPost(M,C,W,S,verbose=False,skip_plots=False):
-    """Performs the post-processing
-
-    Determines plot limits across all models, makes plots, generates
-    other forms of HTML output.
-
-    Parameters
-    ----------
-    M : list of ILAMB.ModelResult.ModelResult
-       list of models to analyze
-    C : list of ILAMB.Confrontation.Confrontation
-       list of confrontations
-    W : list of (ILAMB.ModelResult.ModelResult, ILAMB.Confrontation.Confrontation) tuples
-        the list of work
-    S : ILAMB.Scoreboard.Scoreboard
-        the scoreboard context
-    verbose : bool, optional
-        enable to print output to the screen monitoring progress
-    skip_plots : bool, optional
-        enable to skip plotting
-    """
-    maxCL = 45; maxML = 20
-
-    # work done on just the master confrontation
-    for c in C: c.determinePlotLimits()
-
-    for w in W:
-        m,c = w
-        try:
-            t0  = time.time()
-            if not skip_plots:
-                c.modelPlots(m)
-                c.sitePlots(m)
-            c.computeOverallScore(m)
-            dt = time.time()-t0
-            proc[rank] += dt
-            if verbose:
-                print ("    {0:>%d} {1:<%d} %sCompleted%s {2:>5.1f} s" % (maxCL,maxML,OK,ENDC)).format(c.longname,m.name,dt)
-                sys.stdout.flush()
-        except Exception as ex:
-            logger.debug("[%s][%s]\n%s" % (c.longname,m.name,format_exc()))
-            if verbose:
-                print ("    {0:>%d} {1:<%d} %s%s%s" % (maxCL,maxML,FAIL,ex.__class__.__name__,ENDC)).format(c.longname,m.name)
-                sys.stdout.flush()
-
-    comm.Barrier()
-    for c in C:
-        if not skip_plots:
-            try:
-                c.compositePlots()
-            except Exception as ex:
-                logger.debug("[compositePlots][%s]\n%s" % (c.longname,format_exc()))
-        c.generateHtml()
-
-    comm.Barrier()
-    if rank==0:
-        S.createHtml(M)
-        S.createSummaryFigure(M)
+        for i,m in enumerate(M):
+            W.append([m,c,i==0])
+    return W
 
 def RestrictiveModelExtents(M,eps=2.):
     extents0 = np.asarray([[-90.,+90.],[-180.,+180.]])
@@ -402,6 +277,61 @@ def RestrictiveModelExtents(M,eps=2.):
     diff    = np.abs(extents0-extents)
     extents = (diff<=eps)*extents0 + (diff>eps)*extents
     return extents
+
+def Confront(w,verbose=True,clean=False):
+
+    # unpack the model and the confrontation
+    m,c,master = w
+    
+    # if the results file exists, skip this confrontation unless we want to clean
+    if os.path.isfile(os.path.join(c.output_path,"%s_%s.nc" % (c.name,m.name))) and clean is False:
+        if verbose:
+            print ("    {0:>%d} {1:<%d} %sUsingCachedData%s " % (maxCL,maxML,OK,ENDC)).format(c.longname,m.name)
+            sys.stdout.flush()
+        return
+
+    # try to run the confrontation
+    try:
+        t0 = time.time()
+        c.confront(m)
+        dt = time.time()-t0
+        if verbose:
+            print ("    {0:>%d} {1:<%d} %sCompleted%s {2:>5.1f} s" % (maxCL,maxML,OK,ENDC)).format(c.longname,m.name,dt)
+            sys.stdout.flush()
+
+    # if things do not work out, print the exception so the user has some idea
+    except Exception as ex:
+        if verbose:
+            print ("    {0:>%d} {1:<%d} %s%s%s" % (maxCL,maxML,FAIL,ex.__class__.__name__,ENDC)).format(c.longname,m.name)
+            sys.stdout.flush()
+        raise
+    
+    return
+
+def ModelPlots(w,verbose=True,skip_plots=False):
+    m,c,master = w
+    print master
+    try:
+        t0  = time.time()
+        if c.limits is None: c.determinePlotLimits()
+        if not skip_plots:
+            c.modelPlots(m)
+            c.sitePlots(m)
+        c.computeOverallScore(m)
+        if master:
+            c.compositePlots()
+            c.generateHtml()
+        dt = time.time()-t0
+        
+        if verbose:
+            print ("    {0:>%d} {1:<%d} %sCompleted%s {2:>5.1f} s" % (maxCL,maxML,OK,ENDC)).format(c.longname,m.name,dt)
+            sys.stdout.flush()
+    except Exception as ex:
+        if verbose:
+            print ("    {0:>%d} {1:<%d} %s%s%s" % (maxCL,maxML,FAIL,ex.__class__.__name__,ENDC)).format(c.longname,m.name)
+            sys.stdout.flush()
+        raise
+    return
 
 class MPIStream():
     """
@@ -448,127 +378,85 @@ class MPIFileHandler(logging.FileHandler):
         stream = MPIStream(self.comm, self.baseFilename, self.mode )
         return stream
 
-parser = argparse.ArgumentParser(description=__doc__)
-parser.add_argument('--model_root', dest="model_root", metavar='root', type=str, nargs=1, default=["./"],
-                    help='root at which to search for models')
-parser.add_argument('--config', dest="config", metavar='config', type=str, nargs=1,
-                    help='path to configuration file to use')
-parser.add_argument('--models', dest="models", metavar='m', type=str, nargs='+',default=[],
-                    help='specify which models to run, list model names with no quotes and only separated by a space.')
-parser.add_argument('--model_year', dest="model_year", metavar='y0 yf', type=int, nargs='+',default=[],
-                    help='set to shift model years, "--model_year y0 yf" will shift years from y0 to yf')
-parser.add_argument('--confrontations', dest="confront", metavar='c', type=str, nargs='+',default=[],
-                    help='specify which confrontations to run, list confrontation names with no quotes and only separated by a space.')
-parser.add_argument('--regions', dest="regions", metavar='r', type=str, nargs='+',default=['global'],
-                    help='specify which regions to compute over')
-parser.add_argument('--clean', dest="clean", action="store_true",
-                    help='enable to remove analysis files and recompute')
-parser.add_argument('--disable_logging', dest="logging", action="store_false",
-                    help='disables logging')
-parser.add_argument('-q','--quiet', dest="quiet", action="store_true",
-                    help='enable to silence screen output')
-parser.add_argument('--filter', dest="filter", metavar='filter', type=str, nargs=1, default=[""],
-                    help='a string which much be in the model filenames')
-parser.add_argument('--build_dir', dest="build_dir", metavar='build_dir', type=str, nargs=1,default=["./_build"],
-                    help='path of where to save the output')
-parser.add_argument('--define_regions', dest="define_regions", type=str, nargs='+',default=[],
-                    help='list files containing user-defined regions')
-parser.add_argument('--model_setup', dest="model_setup", type=str, nargs='+',default=None,
-                    help='list files model setup information')
-parser.add_argument('--skip_plots', dest="skip_plots", action="store_true",
-                    help='enable to skip the plotting phase')
-parser.add_argument('--rel_only', dest="rel_only", action="store_true",
-                    help='enable only display relative differences in overall scores')
-args = parser.parse_args()
-if args.config is None:
-    if rank == 0:
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--model_root', dest="model_root", metavar='root', type=str, nargs=1, default=["./"],
+                        help='root at which to search for models')
+    parser.add_argument('--config', dest="config", metavar='config', type=str, nargs=1,
+                        help='path to configuration file to use')
+    parser.add_argument('--models', dest="models", metavar='m', type=str, nargs='+',default=[],
+                        help='specify which models to run, list model names with no quotes and only separated by a space.')
+    parser.add_argument('--model_year', dest="model_year", metavar='y0 yf', type=int, nargs='+',default=[],
+                        help='set to shift model years, "--model_year y0 yf" will shift years from y0 to yf')
+    parser.add_argument('--confrontations', dest="confront", metavar='c', type=str, nargs='+',default=[],
+                        help='specify which confrontations to run, list confrontation names with no quotes and only separated by a space.')
+    parser.add_argument('--regions', dest="regions", metavar='r', type=str, nargs='+',default=['global'],
+                        help='specify which regions to compute over')
+    parser.add_argument('--clean', dest="clean", action="store_true",
+                        help='enable to remove analysis files and recompute')
+    parser.add_argument('--disable_logging', dest="logging", action="store_false",
+                        help='disables logging')
+    parser.add_argument('-q','--quiet', dest="quiet", action="store_true",
+                        help='enable to silence screen output')
+    parser.add_argument('--filter', dest="filter", metavar='filter', type=str, nargs=1, default=[""],
+                        help='a string which much be in the model filenames')
+    parser.add_argument('--build_dir', dest="build_dir", metavar='build_dir', type=str, nargs=1,default=["./_build"],
+                        help='path of where to save the output')
+    parser.add_argument('--define_regions', dest="define_regions", type=str, nargs='+',default=[],
+                        help='list files containing user-defined regions')
+    parser.add_argument('--model_setup', dest="model_setup", type=str, nargs='+',default=None,
+                        help='list files model setup information')
+    parser.add_argument('--skip_plots', dest="skip_plots", action="store_true",
+                        help='enable to skip the plotting phase')
+    parser.add_argument('--rel_only', dest="rel_only", action="store_true",
+                        help='enable only display relative differences in overall scores')
+    args = parser.parse_args()
+    if args.config is None:
         print "\nError: You must specify a configuration file using the option --config\n"
-    comm.Barrier()
-    comm.Abort(1)
+        comm.Abort(1)
 
-# Setup regions
-r = Regions()
-InitializeRegions(args.define_regions)
-missing = []
-for region in args.regions:
-    if region not in r.regions: missing.append(region)
-if len(missing) > 0:
-    raise ValueError("Unable to find the following regions %s from the following list of possible regions %s" % (missing,r.regions))
+    # Setup regions
+    r = Regions()
+    InitializeRegions(args.define_regions)
+    missing = []
+    for region in args.regions:
+        if region not in r.regions: missing.append(region)
+    if len(missing) > 0:
+        raise ValueError("Unable to find the following regions %s from the following list of possible regions %s" % (missing,r.regions))
+    
+    # Setup study
+    T0 = time.time()
+    if args.model_setup is None:
+        M = InitializeModels(args.model_root[0],args.models,not args.quiet,filter=args.filter[0],model_year=args.model_year)
+    else:
+        M = ParseModelSetup(args.model_setup[0],args.models,not args.quiet,filter=args.filter[0])
+    if not args.quiet: print "\nParsing config file %s...\n" % args.config[0]
+    S = Scoreboard(args.config[0],
+                   regions   = args.regions,
+                   master    = True, # ?!?!
+                   verbose   = not args.quiet,
+                   build_dir = args.build_dir[0],
+                   extents   = RestrictiveModelExtents(M),
+                   rel_only  = args.rel_only)
+    C  = MatchRelationshipConfrontation(S.list())
+    Cf = FilterConfrontationList(C,args.confront)    
+    if not args.quiet and len(Cf) != len(C):
+        print "\nWe filtered some confrontations, actually running...\n"
+        for c in Cf: print ("    {0:>45}").format(c.longname)
+    C = Cf
+    W = BuildLocalWorkList(M,C)
+    
+    if not args.quiet: print "\nRunning model-confrontation pairs...\n"
 
-# Setup study
-T0 = time.time()
-if args.model_setup is None:
-    M = InitializeModels(args.model_root[0],args.models,not args.quiet,filter=args.filter[0],model_year=args.model_year)
-else:
-    M = ParseModelSetup(args.model_setup[0],args.models,not args.quiet,filter=args.filter[0])
-if rank == 0 and not args.quiet: print "\nParsing config file %s...\n" % args.config[0]
-S = Scoreboard(args.config[0],
-               regions   = args.regions,
-               master    = rank==0,
-               verbose   = not args.quiet,
-               build_dir = args.build_dir[0],
-               extents   = RestrictiveModelExtents(M),
-               rel_only  = args.rel_only)
-C  = MatchRelationshipConfrontation(S.list())
-Cf = FilterConfrontationList(C,args.confront)
+    with MPIPoolExecutor() as executor: executor.map(Confront,W)
 
-# Setup logging
-logger    = logging.getLogger("%i" % comm.rank)
-formatter = logging.Formatter('[%(levelname)s][%(name)s][%(funcName)s]%(message)s')
-logger.setLevel(logging.DEBUG)
-if args.logging:
-    mh = MPIFileHandler('%s/ILAMB%02d.log' % (S.build_dir,len(glob.glob("%s/*.log" % S.build_dir))+1))
-    mh.setFormatter(formatter)
-    logger.addHandler(mh)
+    if not args.quiet: print "\nPost-processing which requires collectives...\n"
 
-if rank == 0:
-    logger.info(" " + " ".join(os.uname()))
-    for key in ["ILAMB","numpy","matplotlib","netCDF4","cfunits","sympy","mpi4py"]:
-        pkg  = __import__(key)
-        try:
-            path = pkg.__path__[0]
-        except:
-            path = key
-        logger.info(" %s (%s)" % (path,pkg.__version__))
-    logger.info(" %s" % datetime.datetime.now())
-
-if rank == 0 and not args.quiet and len(Cf) != len(C):
-    print "\nWe filtered some confrontations, actually running...\n"
-    for c in Cf: print ("    {0:>45}").format(c.longname)
-C = Cf
-
-sys.stdout.flush(); comm.Barrier()
-
-if rank==0 and not args.quiet: print "\nRunning model-confrontation pairs...\n"
-
-sys.stdout.flush(); comm.Barrier()
-
-W = BuildLocalWorkList(M,C)
-WorkConfront(W,not args.quiet,args.clean)
-
-sys.stdout.flush(); comm.Barrier()
-
-if rank==0 and not args.quiet: print "\nFinishing post-processing which requires collectives...\n"
-
-sys.stdout.flush(); comm.Barrier()
-
-WorkPost(M,C,W,S,not args.quiet,args.skip_plots)
-
-sys.stdout.flush(); comm.Barrier()
-
-# Runtime information
-proc_reduced = np.zeros(proc.shape)
-comm.Reduce(proc,proc_reduced,root=0)
-if size > 1: logger.info("[process time] %.1f s" % proc[rank])
-if rank==0:
-    logger.info("[total time] %.1f s" % (time.time()-T0))
-    if size > 1:
-        if proc_reduced.min() > 1e-6:
-            logger.info("[process balance] %.2f" % (proc_reduced.max()/proc_reduced.min()))
-        else:
-            logger.info("[process balance] nan")
-        logger.info("[parallel efficiency] %.0f%%" % (100.*proc_reduced.sum()/float(size)/(time.time()-T0)))
-
-if rank==0: S.dumpScores(M,"scores.csv")
-
-if rank==0 and not args.quiet: print "\nCompleted in {0:>5.1f} s\n".format(time.time()-T0)
+    with MPIPoolExecutor() as executor: executor.map(ModelPlots,W)
+    
+    S.createHtml(M)
+    S.createSummaryFigure(M)
+    S.dumpScores(M,"scores.csv")
+    
+    if not args.quiet: print "\nCompleted in {0:>5.1f} s\n".format(time.time()-T0)
