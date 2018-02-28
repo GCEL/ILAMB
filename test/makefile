@@ -1,7 +1,7 @@
 NP = 1
 
 test_sample:
-	@mpirun -n ${NP} ilamb-run                \
+	@mpirun -n 1 -usize ${NP} ilamb-run                \
         --config test.cfg                         \
         --model_root ${ILAMB_ROOT}/MODELS/CLM/    \
 	--models CLM50r243CRUNCEP CLM50r243GSWP3  \
