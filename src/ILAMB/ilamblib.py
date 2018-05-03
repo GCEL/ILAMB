@@ -1,6 +1,7 @@
+from __future__ import absolute_import
 from scipy.interpolate import NearestNDInterpolator
-from constants import dpy,mid_months,bnd_months
-from Regions import Regions
+from .constants import dpy,mid_months,bnd_months
+from .Regions import Regions
 from netCDF4 import Dataset,num2date,date2num
 from datetime import datetime
 from cfunits import Units
@@ -211,7 +212,7 @@ def CellAreas(lat,lon,lat_bnds=None,lon_bnds=None):
     areas : numpy.ndarray
         a 2D array of cell areas in [m2]
     """
-    from constants import earth_rad
+    from .constants import earth_rad
 
     if (lat_bnds is not None and lon_bnds is not None):
         return earth_rad**2*np.outer((np.sin(lat_bnds[:,1]*np.pi/180.)-
@@ -391,7 +392,7 @@ def SympifyWithArgsUnits(expression,args,units):
             # implicit unit of 1
             keys = [str(arg) for arg in expr.args]
             for key in keys:
-                if not units.has_key(key): units[key] = "1"
+                if key not in units: units[key] = "1"
 
             # if we are adding, all arguments must have the same unit.
             key0 = keys[0]
@@ -412,7 +413,7 @@ def SympifyWithArgsUnits(expression,args,units):
             
             # just create the new unit
             keys = [str(arg) for arg in expr.args]
-            units[ekey] = " ".join(["(%s)" % units[key] for key in keys if units.has_key(key)])
+            units[ekey] = " ".join(["(%s)" % units[key] for key in keys if key in units])
     return sympify(str(expression),locals=args),units[ekey]            
 
             
@@ -727,7 +728,7 @@ def Score(var,normalizer):
     normalizer : ILAMB.Variable.Variable
         The variable by which we normalize 
     """
-    from Variable import Variable
+    from .Variable import Variable
     name = var.name.replace("bias","bias_score")
     name =     name.replace("diff","diff_score")
     name =     name.replace("rmse","rmse_score")
@@ -788,7 +789,7 @@ def ScoreSeasonalCycle(phase_shift):
     Possible remove this function as we do not compute other score
     components via a ilamblib function.
     """
-    from Variable import Variable
+    from .Variable import Variable
     return Variable(data  = (1+np.cos(np.abs(phase_shift.data)/365*2*np.pi))*0.5,
                     unit  = "1",
                     name  = phase_shift.name.replace("phase_shift","phase_shift_score"),
@@ -847,7 +848,7 @@ def AnalysisMeanStateSites(ref,com,**keywords):
 
     """
 
-    from Variable import Variable
+    from .Variable import Variable
     regions           = keywords.get("regions"          ,["global"])
     dataset           = keywords.get("dataset"          ,None)
     benchmark_dataset = keywords.get("benchmark_dataset",None)
@@ -1194,7 +1195,7 @@ def AnalysisMeanStateSpace(ref,com,**keywords):
         the unit to use when displaying output on plots on the HTML page
 
     """
-    from Variable import Variable
+    from .Variable import Variable
     regions           = keywords.get("regions"          ,["global"])
     dataset           = keywords.get("dataset"          ,None)
     benchmark_dataset = keywords.get("benchmark_dataset",None)
@@ -1699,7 +1700,7 @@ def CombineVariables(V):
     v : ILAMB.Variable.Variable
         the merged variable
     """
-    from Variable import Variable
+    from .Variable import Variable
     
     # checks on data
     assert type(V) == type([])

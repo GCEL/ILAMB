@@ -1,10 +1,11 @@
-from Confrontation import Confrontation
-from Variable import Variable
+from __future__ import absolute_import
+from .Confrontation import Confrontation
+from .Variable import Variable
 from netCDF4 import Dataset
 from copy import deepcopy
-import ilamblib as il
+from . import ilamblib as il
 import pylab as plt
-import Post as post
+from . import Post as post
 import numpy as np
 import os,glob
 

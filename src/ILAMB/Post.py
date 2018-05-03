@@ -1,7 +1,8 @@
+from __future__ import absolute_import
 import pylab as plt
 import numpy as np
-from constants import space_opts,time_opts
-from Regions import Regions
+from .constants import space_opts,time_opts
+from .Regions import Regions
 import re
 
 def UseLatexPltOptions(fsize=18):
@@ -636,9 +637,9 @@ class HtmlAllModelsPage(HtmlPage):
       <select id="%sPlot" onchange="AllSelect()">""" % (self.name)
             for plot in self.plots:                
                 name  = ''
-                if space_opts.has_key(plot.name):
+                if plot.name in space_opts:
                     name = space_opts[plot.name]["name"]
-                elif time_opts.has_key(plot.name):
+                elif plot.name in time_opts:
                     name = time_opts[plot.name]["name"]
                 elif plot.longname is not None:
                     name = plot.longname
@@ -1185,7 +1186,7 @@ def WhittakerDiagram(X,Y,Z,**keywords):
     mask   = (X.data.mask + Y.data.mask + Z.data.mask)==0
 
     # mask outside region
-    from constants import regions as ILAMBregions
+    from .constants import regions as ILAMBregions
     region    = keywords.get("region","global")
     lats,lons = ILAMBregions[region]
     mask     += (np.outer((X.lat>lats[0])*(X.lat<lats[1]),

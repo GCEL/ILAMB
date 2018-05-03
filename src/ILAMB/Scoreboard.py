@@ -1,16 +1,18 @@
-from Confrontation import Confrontation
-from ConfNBP import ConfNBP
-from ConfTWSA import ConfTWSA
-from ConfRunoff import ConfRunoff
-from ConfEvapFraction import ConfEvapFraction
-from ConfIOMB import ConfIOMB
-from ConfDiurnal import ConfDiurnal
-from ConfPermafrost import ConfPermafrost
+from __future__ import print_function
+from __future__ import absolute_import
+from .Confrontation import Confrontation
+from .ConfNBP import ConfNBP
+from .ConfTWSA import ConfTWSA
+from .ConfRunoff import ConfRunoff
+from .ConfEvapFraction import ConfEvapFraction
+from .ConfIOMB import ConfIOMB
+from .ConfDiurnal import ConfDiurnal
+from .ConfPermafrost import ConfPermafrost
 import os,re
 from netCDF4 import Dataset
 import numpy as np
-from Post import BenchmarkSummaryFigure
-from ilamblib import MisplacedData
+from .Post import BenchmarkSummaryFigure
+from .ilamblib import MisplacedData
 
 global_print_node_string  = ""
 global_confrontation_list = []
@@ -189,7 +191,7 @@ class Scoreboard():
     """
     def __init__(self,filename,regions=["global"],verbose=False,master=True,build_dir="./_build",extents=None,rel_only=False):
         
-        if not os.environ.has_key('ILAMB_ROOT'):
+        if 'ILAMB_ROOT' not in os.environ:
             raise ValueError("You must set the environment variable 'ILAMB_ROOT'")
         self.build_dir = build_dir
         self.rel_only  = rel_only
@@ -206,7 +208,7 @@ class Scoreboard():
             if node.regions is None: node.regions = regions
             
             # pick the confrontation to use, is it a built-in confrontation?
-            if ConfrontationTypes.has_key(node.ctype):
+            if node.ctype in ConfrontationTypes:
                 Constructor = ConfrontationTypes[node.ctype]
             else:
                 # try importing the confrontation
@@ -219,7 +221,7 @@ class Scoreboard():
                 node.confrontation = Constructor(**(node.__dict__))
                 node.confrontation.extents = extents
                 
-                if verbose and master: print ("    {0:>%d}\033[92m Initialized\033[0m" % max_name_len).format(node.confrontation.longname)
+                if verbose and master: print(("    {0:>%d}\033[92m Initialized\033[0m" % max_name_len).format(node.confrontation.longname))
                 
             except MisplacedData:
 
@@ -228,7 +230,7 @@ class Scoreboard():
                     longname = longname.replace("//","/").replace(self.build_dir,"")
                     if longname[-1] == "/": longname = longname[:-1]
                     longname = "/".join(longname.split("/")[1:])
-                    print ("    {0:>%d}\033[91m MisplacedData\033[0m" % max_name_len).format(longname)
+                    print(("    {0:>%d}\033[91m MisplacedData\033[0m" % max_name_len).format(longname))
                 
         def _buildDirectories(node):
             if node.name is None: return
@@ -485,7 +487,7 @@ def CompositeScores(tree,M):
                         grp     = dataset.groups["MeanState"].groups["scalars"]
                     except:
                         continue
-                    if grp.variables.has_key("Overall Score global"):
+                    if "Overall Score global" in grp.variables:
                         data[ind] = grp.variables["Overall Score global"][0]
                         mask[ind] = 0
                     else:
@@ -620,7 +622,7 @@ def GenerateRelSummaryFigure(S,M,figname,rel_only=False):
             for ind in dep.children:
                 iname = ind.name.split("/")[0]
                 key   = "%s/%s" % (dname,iname)
-                if scores.has_key(key):
+                if key in scores:
                     scores[key] += ind.score
                     counts[key] += 1.
                 else:

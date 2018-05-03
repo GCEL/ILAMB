@@ -1,10 +1,11 @@
-from Confrontation import Confrontation
+from __future__ import absolute_import
+from .Confrontation import Confrontation
 from mpl_toolkits.basemap import Basemap
-from Variable import Variable
-from Post import ColorBar
+from .Variable import Variable
+from .Post import ColorBar
 import matplotlib.pyplot as plt
 from netCDF4 import Dataset
-import ilamblib as il
+from . import ilamblib as il
 import numpy as np
 
 class ConfPermafrost(Confrontation):

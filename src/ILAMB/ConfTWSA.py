@@ -1,10 +1,11 @@
-from Confrontation import Confrontation
+from __future__ import absolute_import
+from .Confrontation import Confrontation
 import matplotlib.pyplot as plt
-from Variable import Variable
-from Regions import Regions
+from .Variable import Variable
+from .Regions import Regions
 from netCDF4 import Dataset
-import ilamblib as il
-import Post as post
+from . import ilamblib as il
+from . import Post as post
 import numpy as np
 import os
 

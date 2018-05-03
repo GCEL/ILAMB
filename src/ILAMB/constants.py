@@ -1,6 +1,7 @@
+from __future__ import absolute_import
 from numpy import asarray,ones,copy as npcopy
 from matplotlib.colors import from_levels_and_colors
-from Regions import Regions
+from .Regions import Regions
 
 __all__ = ['spm','mph','hpd','mpy','dpy_noleap','dpy_gregorian','dpy_360','dpm_noleap','dpm_gregorian','dpm_360','g_per_Pg','g_per_kg','Ar_molar_mass','C_molar_mass','N_molar_mass','O_molar_mass','CO2_molar_mass','dry_air_molar_mass','dry_air_mass','dry_air_moles','co2_g_per_ppm','co2_ppm_per_kg','co2_ppm_per_C_Pg','regions','NCARclrs','NCARcmap','NCARnorm','region_names','dpy','mid_months','spd','spy']
 

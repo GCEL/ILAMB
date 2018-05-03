@@ -1,6 +1,7 @@
-from Variable import Variable
+from __future__ import absolute_import
+from .Variable import Variable
 from netCDF4 import Dataset
-import ilamblib as il
+from . import ilamblib as il
 import numpy as np
 import glob,os
 from mpi4py import MPI
@@ -80,7 +81,7 @@ class ModelResult():
                 
                 # populate dictionary for which variables are in which files
                 for key in dataset.variables.keys():
-                    if not variables.has_key(key):
+                    if key not in variables:
                         variables[key] = []
                     variables[key].append(pathName)
 
@@ -189,7 +190,7 @@ class ModelResult():
         tmin =  1e20
         tmax = -1e20
         for v in altvars:
-            if not self.variables.has_key(v): continue
+            if v not in self.variables: continue
             for pathName in self.variables[v]:
                 var = Variable(filename       = pathName,
                                variable_name  = variable,

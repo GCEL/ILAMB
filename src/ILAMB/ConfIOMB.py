@@ -241,7 +241,7 @@ class ConfIOMB(Confrontation):
 
                     vname = "profile_of_%s_over_%s" % (self.variable,region)
                     if vname in variables:
-                        if not f1.has_key(region):
+                        if region not in f1:
                             f1[region],a1[region] = plt.subplots(figsize=(5,5),tight_layout=True)
                         var = Variable(filename=fname,variable_name=vname,groupname="MeanState")
                         u1  = var.unit
@@ -272,8 +272,8 @@ class ConfIOMB(Confrontation):
                 if "MeanState" not in dset.groups: continue
                 dset = dset.groups["MeanState"]
                 for region in self.regions:
-                    if not std. has_key(region): std [region] = []
-                    if not corr.has_key(region): corr[region] = []
+                    if region not in std: std [region] = []
+                    if region not in corr: corr[region] = []
                     key = []
                     if "scalars" in dset.groups:
                         key = [v for v in dset.groups["scalars"].variables.keys() if ("Spatial Distribution Score" in v and region in v)]
@@ -316,7 +316,7 @@ class ConfIOMB(Confrontation):
                            legend = False) 
             if "Benchmark" in models: colors.pop(models.index("Benchmark"))
             for region in self.regions:
-                if not (std.has_key(region) and corr.has_key(region)): continue
+                if not (region in std and region in corr): continue
                 if len(std[region]) != len(corr[region]): continue
                 if len(std[region]) == 0: continue
                 fig = plt.figure(figsize=(6.0,6.0))
@@ -556,8 +556,8 @@ class ConfIOMB(Confrontation):
                     pname  = vname.split("_")[ 0]
                     if "_over_" in vname:
                         region = vname.split("_over_")[-1]
-                        if not limits.has_key(pname): limits[pname] = {}
-                        if not limits[pname].has_key(region):
+                        if pname not in limits: limits[pname] = {}
+                        if region not in limits[pname]:
                             limits[pname][region] = {}
                             limits[pname][region]["min"]  = +1e20
                             limits[pname][region]["max"]  = -1e20
@@ -565,7 +565,7 @@ class ConfIOMB(Confrontation):
                         limits[pname][region]["min"] = min(limits[pname][region]["min"],var.getncattr("min"))
                         limits[pname][region]["max"] = max(limits[pname][region]["max"],var.getncattr("max"))
                     else:
-                        if not limits.has_key(pname):
+                        if pname not in limits:
                             limits[pname] = {}
                             limits[pname]["min"]  = +1e20
                             limits[pname]["max"]  = -1e20
@@ -592,7 +592,7 @@ class ConfIOMB(Confrontation):
 
             # Pick colormap
             cmap = self.cmap
-            if cmaps.has_key(pname):
+            if pname in cmaps:
                 cmap = cmaps[pname]
             elif "score" in pname:
                 cmap = "RdYlGn"
@@ -605,7 +605,7 @@ class ConfIOMB(Confrontation):
 
             # Some plots need legends
             if pname in ["timeint","bias","biasscore","rmse","rmsescore","timelonint"]:
-                if limits[pname].has_key("min"):
+                if "min" in limits[pname]:
                     fig,ax = plt.subplots(figsize=(6.8,1.0),tight_layout=True)
                     post.ColorBar(ax,
                                   vmin  = limits[pname]["min" ],
