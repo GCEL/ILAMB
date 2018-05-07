@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from setuptools import setup
+from setuptools import setup, find_packages
 from codecs import open
 import subprocess
 import os
@@ -95,7 +95,7 @@ setup(
         'Programming Language :: Python :: 2.7',
     ],
     keywords=['benchmarking','earth system modeling','climate modeling','model intercomparison'],
-    packages=['ILAMB'],
+    packages=find_packages(),
     package_dir={'ILAMB' : 'src/ILAMB'},
     scripts=['bin/ilamb-run','bin/ilamb-fetch','bin/ilamb-mean','bin/ilamb-doctor','bin/ilamb-table'],
     install_requires=['numpy>=1.9.2',
