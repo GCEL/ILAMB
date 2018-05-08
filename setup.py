@@ -96,7 +96,7 @@ setup(
     ],
     keywords=['benchmarking','earth system modeling','climate modeling','model intercomparison'],
     packages=find_packages(),
-    package_dir={'ILAMB' : 'src/ILAMB'},
+    package_dir={'' : 'src'},
     scripts=['bin/ilamb-run','bin/ilamb-fetch','bin/ilamb-mean','bin/ilamb-doctor','bin/ilamb-table'],
     install_requires=['numpy>=1.9.2',
                       'matplotlib>=1.4.3',
