@@ -365,6 +365,7 @@ def WorkPost(M,C,W,S,verbose=False,skip_plots=False):
             t0  = time.time()
             if not skip_plots:
                 c.modelPlots(m)
+                c.modelPlotsStandalone(m)
                 c.sitePlots(m)
             c.computeOverallScore(m)
             dt = time.time()-t0
