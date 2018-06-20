@@ -598,7 +598,121 @@ class Confrontation(object):
             post.TaylorDiagram(np.asarray(std[region]),np.asarray(corr[region]),1.0,fig,colors)
             fig.savefig(os.path.join(self.output_path,"%s_spatial_variance.png" % region))
             plt.close()
-            
+
+    def modelPlotsStandalone(self,m):
+        """For a given model, create the plots of the analysis results.
+
+        This routine will extract plotting information out of the
+        netCDF file which results from the analysis and create
+        plots. Note that determinePlotLimits should be called before
+        this routine.
+
+        """
+        self._relationship(m)
+        bname     = os.path.join(self.output_path,"%s_Benchmark.nc" % (self.name       ))
+        fname     = os.path.join(self.output_path,"%s_%s.nc"        % (self.name,m.name))
+        if not os.path.isfile(bname): return
+        if not os.path.isfile(fname): return
+
+        # get the HTML page
+        #page = [page for page in self.layout.pages if "MeanState" in page.name][0]  
+        
+        with Dataset(fname) as dataset:
+            group     = dataset.groups["MeanState"]
+            variables = getVariableList(group)
+            color     = dataset.getncattr("color")
+            for vname in variables:
+	                
+	            # is this a variable we need to plot?
+	            pname = vname.split("_")[0]
+	            if group.variables[vname][...].size <= 1: continue
+	            var = Variable(filename=fname,groupname="MeanState",variable_name=vname)
+                    
+	            if (var.spatial or (var.ndata is not None)) and not var.temporal:
+	
+	                # grab plotting options
+	                if pname not in self.limits.keys(): continue
+	                opts = space_opts[pname]
+	
+	                # add to html layout
+	                #page.addFigure(opts["section"],
+	                #               pname,
+	                #               opts["pattern"],
+	                #               side   = opts["sidelbl"],
+	                #               legend = opts["haslegend"])
+	
+	                # plot variable
+	                for region in self.regions:
+	                    fig = plt.figure(figsize=(6.8,2.8))
+	                    ax  = fig.add_axes([0.06,0.025,0.88,0.965])
+	                    var.plot(ax,
+	                             region = region,
+	                             vmin   = self.limits[pname]["min"],
+	                             vmax   = self.limits[pname]["max"],
+	                             cmap   = self.limits[pname]["cmap"])
+	                    fig.savefig(os.path.join(self.output_path,"%s_%s_%s_CStandalone.png" % (m.name,region,pname)))
+	                    plt.close()
+                            
+	                # Jumping through hoops to get the benchmark plotted and in the html output
+	                if self.master and (pname == "timeint" or pname == "phase" or pname == "iav"):
+	
+	                    opts = space_opts[pname]
+	
+	                    # add to html layout
+	                    #page.addFigure(opts["section"],
+	                    #               "benchmark_%s" % pname,
+	                    #               opts["pattern"].replace("MNAME","Benchmark"),
+	                    #               side   = opts["sidelbl"].replace("MODEL","BENCHMARK"),
+	                    #               legend = True)
+	
+	                    # plot variable
+	                    obs = Variable(filename=bname,groupname="MeanState",variable_name=vname)
+	                    for region in self.regions:
+	                        fig = plt.figure(figsize=(6.8,2.8))
+	                        ax  = fig.add_axes([0.06,0.025,0.88,0.965])
+	                        obs.plot(ax,
+	                                 region = region,
+	                                 vmin   = self.limits[pname]["min"],
+	                                 vmax   = self.limits[pname]["max"],
+	                                 cmap   = self.limits[pname]["cmap"])
+	                        fig.savefig(os.path.join(self.output_path,"Benchmark_%s_%s_CStandalone.png" % (region,pname)))
+	                        plt.close()
+	                    
+	            if not (var.spatial or (var.ndata is not None)) and var.temporal:
+	                
+	                # grab the benchmark dataset to plot along with
+	                obs = Variable(filename=bname,groupname="MeanState",variable_name=vname).convert(var.unit)
+	                
+	                # grab plotting options
+	                opts = time_opts[pname]
+	
+	                # add to html layout
+	                #page.addFigure(opts["section"],
+	                #               pname,
+	                #               opts["pattern"],
+	                #               side   = opts["sidelbl"],
+	                #               legend = opts["haslegend"])
+	
+	                # plot variable
+	                for region in self.regions:
+	                    if region not in vname: continue
+	                    fig,ax = plt.subplots(figsize=(6.8,2.8),tight_layout=True)
+	                    obs.plot(ax,lw=2,color='k',alpha=0.5)
+	                    var.plot(ax,lw=2,color=color,label=m.name,
+	                             ticks     =opts["ticks"],
+	                             ticklabels=opts["ticklabels"])
+
+                            dy = 0.05*(self.limits[pname][region]["max"]-self.limits[pname][region]["min"])
+	                    ax.set_ylim(self.limits[pname][region]["min"]-dy,
+	                                self.limits[pname][region]["max"]+dy)
+	                    ylbl = opts["ylabel"]
+	                    if ylbl == "unit": ylbl = post.UnitStringToMatplotlib(var.unit)
+	                    ax.set_ylabel(ylbl)
+	                    fig.savefig(os.path.join(self.output_path,"%s_%s_%s_CStandalone.png" % (m.name,region,pname)))
+	                    plt.close()
+
+        logger.info("[%s][%s] Success" % (self.longname,m.name))
+
     def modelPlots(self,m):
         """For a given model, create the plots of the analysis results.
 
