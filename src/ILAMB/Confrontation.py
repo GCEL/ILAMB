@@ -649,7 +649,8 @@ class Confrontation(object):
 	                             region = region,
 	                             vmin   = self.limits[pname]["min"],
 	                             vmax   = self.limits[pname]["max"],
-	                             cmap   = self.limits[pname]["cmap"])
+	                             cmap   = self.limits[pname]["cmap"],
+                                   cbar=True)
 	                    fig.savefig(os.path.join(self.output_path,"%s_%s_%s_CStandalone.png" % (m.name,region,pname)))
 	                    plt.close()
                             
@@ -674,7 +675,8 @@ class Confrontation(object):
 	                                 region = region,
 	                                 vmin   = self.limits[pname]["min"],
 	                                 vmax   = self.limits[pname]["max"],
-	                                 cmap   = self.limits[pname]["cmap"])
+	                                 cmap   = self.limits[pname]["cmap"],
+                                       cbar=True)
 	                        fig.savefig(os.path.join(self.output_path,"Benchmark_%s_%s_CStandalone.png" % (region,pname)))
 	                        plt.close()
 	                    
@@ -700,7 +702,8 @@ class Confrontation(object):
 	                    obs.plot(ax,lw=2,color='k',alpha=0.5)
 	                    var.plot(ax,lw=2,color=color,label=m.name,
 	                             ticks     =opts["ticks"],
-	                             ticklabels=opts["ticklabels"])
+	                             ticklabels=opts["ticklabels"],
+                                   cbar=True)
 
                             dy = 0.05*(self.limits[pname][region]["max"]-self.limits[pname][region]["min"])
 	                    ax.set_ylim(self.limits[pname][region]["min"]-dy,
