@@ -324,7 +324,219 @@ class ConfIOMB(Confrontation):
                 fig.savefig("%s/%s_spatial_variance.png" % (self.output_path,region))
                 plt.close()
 
+    def modelPlotsStandalone(self, m):
+        """This version will create standalone figure plots (for publications etc.)
+        """
+        def _fheight(region):
+            if region in ["arctic","southern"]: return 6.8
+            return 2.8
         
+        bname  = "%s/%s_Benchmark.nc" % (self.output_path,self.name)
+        fname  = "%s/%s_%s.nc" % (self.output_path,self.name,m.name)
+        if not os.path.isfile(bname): return
+        if not os.path.isfile(fname): return
+
+        # get the HTML page
+        page = [page for page in self.layout.pages if "MeanState" in page.name][0]
+
+        with Dataset(fname) as dataset:
+            group     = dataset.groups["MeanState"]
+            variables = getVariableList(group)
+            color     = dataset.getncattr("color")
+
+            vname = "timeint_surface_%s" % self.variable
+            if vname in variables:
+                var = Variable(filename=fname,variable_name=vname,groupname="MeanState")
+                #page.addFigure("Period mean at surface",
+                #               "timeint",
+                #               "MNAME_RNAME_timeint.png",
+                #               side   = "MODEL SURFACE MEAN",
+                #               legend = True)
+                for region in self.regions:
+                    fig = plt.figure()
+                    ax  = fig.add_axes([0.06,0.025,0.88,0.965])
+                    var.plot(ax,
+                             region = region,
+                             vmin   = self.limits["timeint"]["min"],
+                             vmax   = self.limits["timeint"]["max"],
+                             cmap   = self.cmap,
+                             land   = 0.750,
+                             water  = 0.875)
+                    fig.savefig("%s/%s_%s_timeint_standalone.png" % (self.output_path,m.name,region))
+                    plt.close()
+
+            vname = "bias_surface_%s" % self.variable
+            if vname in variables:
+                var = Variable(filename=fname,variable_name=vname,groupname="MeanState")
+                #page.addFigure("Period mean at surface",
+                #               "bias",
+                #               "MNAME_RNAME_bias.png",
+                #               side   = "SURFACE MEAN BIAS",
+                #               legend = True)
+                for region in self.regions:
+                    fig = plt.figure()
+                    ax  = fig.add_axes([0.06,0.025,0.88,0.965])
+                    var.plot(ax,
+                             region = region,
+                             vmin   = self.limits["bias"]["min"],
+                             vmax   = self.limits["bias"]["max"],
+                             cmap   = "seismic",
+                             land   = 0.750,
+                             water  = 0.875)
+                    fig.savefig("%s/%s_%s_bias_standalone.png" % (self.output_path,m.name,region))
+                    plt.close()
+
+            vname = "biasscore_surface_%s" % self.variable
+            if vname in variables:
+                var = Variable(filename=fname,variable_name=vname,groupname="MeanState")
+                #page.addFigure("Period mean at surface",
+                #               "biasscore",
+                #               "MNAME_RNAME_biasscore.png",
+                #               side   = "SURFACE MEAN BIAS SCORE",
+                #               legend = True)
+                for region in self.regions:
+                    fig = plt.figure()
+                    ax  = fig.add_axes([0.06,0.025,0.88,0.965])
+                    var.plot(ax,
+                             region = region,
+                             vmin   = 0,
+                             vmax   = 1,
+                             cmap   = "RdYlGn",
+                             land   = 0.750,
+                             water  = 0.875)
+                    fig.savefig("%s/%s_%s_biasscore_standalone.png" % (self.output_path,m.name,region))
+                    plt.close()
+                    
+            vname = "rmse_surface_%s" % self.variable
+            if vname in variables:
+                var = Variable(filename=fname,variable_name=vname,groupname="MeanState")
+                #page.addFigure("Period mean at surface",
+                #               "rmse",
+                #               "MNAME_RNAME_rmse.png",
+                #               side   = "SURFACE MEAN RMSE",
+                #               legend = True)
+                for region in self.regions:
+                    fig = plt.figure()
+                    ax  = fig.add_axes([0.06,0.025,0.88,0.965])
+                    var.plot(ax,
+                             region = region,
+                             vmin   = self.limits["rmse"]["min"],
+                             vmax   = self.limits["rmse"]["max"],
+                             cmap   = "YlOrRd",
+                             land   = 0.750,
+                             water  = 0.875)
+                    fig.savefig("%s/%s_%s_rmse_standalone.png" % (self.output_path,m.name,region))
+                    plt.close()
+
+            vname = "rmsescore_surface_%s" % self.variable
+            if vname in variables:
+                var = Variable(filename=fname,variable_name=vname,groupname="MeanState")
+                #page.addFigure("Period mean at surface",
+                #               "rmsescore",
+                #               "MNAME_RNAME_rmsescore.png",
+                #               side   = "SURFACE MEAN RMSE SCORE",
+                #               legend = True)
+                for region in self.regions:
+                    fig = plt.figure()
+                    ax  = fig.add_axes([0.06,0.025,0.88,0.965])
+                    var.plot(ax,
+                             region = region,
+                             vmin   = 0,
+                             vmax   = 1,
+                             cmap   = "RdYlGn",
+                             land   = 0.750,
+                             water  = 0.875)
+                    fig.savefig("%s/%s_%s_rmsescore_standalone.png" % (self.output_path,m.name,region))
+                    plt.close()
+
+            for region in self.regions:
+
+                vname = "timelonint_of_%s_over_%s" % (self.variable,region)
+                if vname in variables:
+                    var = Variable(filename=fname,variable_name=vname,groupname="MeanState")
+                    if region == "global":
+                        pass
+                        #page.addFigure("Mean regional depth profiles",
+                        #               "timelonint",
+                        #               "MNAME_RNAME_timelonint.png",
+                        #               side     = "MODEL DEPTH PROFILE",
+                        #               legend   = True,
+                        #               longname = "Time/longitude averaged profile")
+                    fig,ax = plt.subplots(figsize=(6.8,2.8),tight_layout=True)
+                    l   = np.hstack([var.lat_bnds  [:,0],var.lat_bnds  [-1,1]])
+                    d   = np.hstack([var.depth_bnds[:,0],var.depth_bnds[-1,1]])
+                    ind = np.all(var.data.mask,axis=0)
+                    ind = np.ma.masked_array(range(ind.size),mask=ind,dtype=int)
+                    b   = ind.min()
+                    e   = ind.max()+1
+                    ax.pcolormesh(l[b:(e+1)],d,var.data[:,b:e],
+                                  vmin = self.limits["timelonint"]["global"]["min"],
+                                  vmax = self.limits["timelonint"]["global"]["max"],
+                                  cmap = self.cmap)
+                    ax.set_xlabel("latitude")
+                    ax.set_ylim((d.max(),d.min()))
+                    ax.set_ylabel("depth [m]")
+                    fig.savefig("%s/%s_%s_timelonint_standalone.png" % (self.output_path,m.name,region))
+                    plt.close()
+
+        if not self.master: return
+
+        with Dataset(bname) as dataset:
+            group     = dataset.groups["MeanState"]
+            variables = getVariableList(group)
+            color     = dataset.getncattr("color")
+
+            vname = "timeint_surface_%s" % self.variable
+            if vname in variables:
+                var = Variable(filename=bname,variable_name=vname,groupname="MeanState")
+                #page.addFigure("Period mean at surface",
+                #               "benchmark_timeint",
+                #               "Benchmark_RNAME_timeint.png",
+                #               side   = "BENCHMARK SURFACE MEAN",
+                #               legend = True)
+                for region in self.regions:
+                    fig = plt.figure()
+                    ax  = fig.add_axes([0.06,0.025,0.88,0.965])
+                    var.plot(ax,
+                             region = region,
+                             vmin   = self.limits["timeint"]["min"],
+                             vmax   = self.limits["timeint"]["max"],
+                             cmap   = self.cmap,
+                             land   = 0.750,
+                             water  = 0.875)
+                    fig.savefig("%s/Benchmark_%s_timeint_standalone.png" % (self.output_path,region))
+                    plt.close()
+
+            for region in self.regions:
+
+                vname = "timelonint_of_%s_over_%s" % (self.variable,region)
+                if vname in variables:
+                    var = Variable(filename=bname,variable_name=vname,groupname="MeanState")
+                    if region == "global":
+                        pass
+                        #page.addFigure("Mean regional depth profiles",
+                        #               "benchmark_timelonint",
+                        #              "Benchmark_RNAME_timelonint.png",
+                        #               side   = "BENCHMARK DEPTH PROFILE",
+                        #               legend = True,
+                        #              longname = "Time/longitude averaged profile")
+                    fig,ax = plt.subplots(figsize=(6.8,2.8),tight_layout=True)
+                    l   = np.hstack([var.lat_bnds  [:,0],var.lat_bnds  [-1,1]])
+                    d   = np.hstack([var.depth_bnds[:,0],var.depth_bnds[-1,1]])
+                    ind = np.all(var.data.mask,axis=0)
+                    ind = np.ma.masked_array(range(ind.size),mask=ind,dtype=int)
+                    b   = ind.min()
+                    e   = ind.max()+1
+                    ax.pcolormesh(l[b:(e+1)],d,var.data[:,b:e],
+                                  vmin = self.limits["timelonint"]["global"]["min"],
+                                  vmax = self.limits["timelonint"]["global"]["max"],
+                                  cmap = self.cmap)
+                    ax.set_xlabel("latitude")
+                    ax.set_ylim((d.max(),d.min()))
+                    ax.set_ylabel("depth [m]")
+                    fig.savefig("%s/Benchmark_%s_timelonint_standalone.png" % (self.output_path,region))
+                    plt.close()
+
     def modelPlots(self,m):
 
         def _fheight(region):

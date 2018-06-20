@@ -1087,7 +1087,7 @@ class Variable:
         land   = keywords.get("land"  ,0.875)
         water  = keywords.get("water" ,0.750)
         pad    = keywords.get("pad"   ,5.0)
-        cbar   = keywords.get("cbar"  ,True)
+        cbar   = keywords.get("cbar"  ,False)
         
         rem_mask = None
         r = Regions()
