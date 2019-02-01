@@ -3,7 +3,7 @@ from Variable import *
 from Regions import Regions
 from constants import space_opts,time_opts,mid_months,bnd_months
 import os,glob,re
-from netCDF4 import Dataset
+from netCDF4 import Dataset, num2date
 import Post as post
 import pylab as plt
 from matplotlib.colors import LogNorm
@@ -128,9 +128,20 @@ class Confrontation(object):
                     t  = dataset.variables[t.bounds][...]
                     y0 = int(t[ 0,0]/365.+1850.)
                     yf = int(t[-1,1]/365.+1850.)-1
+                elif "units" in t.ncattrs():
+                    #try:
+                    # Try calculating it from the start year, converting it to date
+                    units = t.units
+                    times = list(dataset.variables["time"] )
+                    y0 = num2date(t[0], units).year 
+                    yf = num2date(t[-1], units).year
+                    #except:
                 else:
                     y0 = int(round(t[ 0]/365.)+1850.)
                     yf = int(round(t[-1]/365.)+1850.)-1
+            # TODO better way of doing this:
+            #print "START YEAR IS: ", y0
+            #print "END YEAR IS: ", yf
 
         if self.hasSites:
             pages.append(post.HtmlSitePlotsPage("SitePlots","Site Plots"))
@@ -354,7 +365,7 @@ class Confrontation(object):
                             limits[pname]["max"]  = -1e20
                             limits[pname]["unit"] = post.UnitStringToMatplotlib(var.getncattr("units"))
                         limits[pname]["min"] = min(limits[pname]["min"],var.getncattr(min_str))
-                        limits[pname]["max"] = max(limits[pname]["max"],var.getncattr(max_str))
+                        limits[pname]["max"] = max(limits[pname]["max"],var.getncattr(max_str))  # 40 to fix these limits
                     elif time_opts.has_key(pname):
                         if not limits.has_key(pname): limits[pname] = {}
                         if not limits[pname].has_key(region):
@@ -363,7 +374,7 @@ class Confrontation(object):
                             limits[pname][region]["max"]  = -1e20
                             limits[pname][region]["unit"] = post.UnitStringToMatplotlib(var.getncattr("units"))
                         limits[pname][region]["min"] = min(limits[pname][region]["min"],var.getncattr("min"))
-                        limits[pname][region]["max"] = max(limits[pname][region]["max"],var.getncattr("max"))
+                        limits[pname][region]["max"] = max(limits[pname][region]["max"],var.getncattr("max"))  # 40 to fix limits
                     if not prune and "Benchmark" in fname and pname == "timeint":
                         prune = True
                         self.pruneRegions(Variable(filename      = fname,
@@ -380,7 +391,7 @@ class Confrontation(object):
             
             # Determine plot limits and colormap
             if opts["sym"]:
-                vabs =  max(abs(limits[pname]["min"]),abs(limits[pname]["min"]))
+                vabs = 40.0# max(abs(limits[pname]["min"]),abs(limits[pname]["min"]))
                 limits[pname]["min"] = -vabs
                 limits[pname]["max"] =  vabs
 

@@ -1510,7 +1510,7 @@ def ClipTime(v,t0,tf):
         if end   >= v.time.size-1:
             end   = v.time.size-1
             break
-    v.time      = v.time     [begin:(end+1)    ]
+    v.time      = v.time     [begin:(end+1)    ]   # HACK: removed: end+1
     v.time_bnds = v.time_bnds[begin:(end+1),...]
     v.data      = v.data     [begin:(end+1),...]
     return v
@@ -1613,7 +1613,7 @@ def MakeComparable(ref,com,**keywords):
     # If the datasets are both spatial, ensure that both represent the
     # same spatial area and trim the datasets if not.
     if ref.spatial and com.spatial:
-
+        logger.info("Both datasets are spatial.")
         lat_bnds = (max(ref.lat_bnds[ 0,0],com.lat_bnds[ 0,0],extents[0,0]),
                     min(ref.lat_bnds[-1,1],com.lat_bnds[-1,1],extents[0,1]))
         lon_bnds = (max(ref.lon_bnds[ 0,0],com.lon_bnds[ 0,0],extents[1,0]),
@@ -1648,7 +1648,11 @@ def MakeComparable(ref,com,**keywords):
 
         # If the reference time scale is significantly larger than the
         # comparison, coarsen the comparison
-        if np.log10(ref.dt/com.dt) > 0.5:
+
+        # But, don't take logs if time delta is zero.
+        if ref.dt == 0.0 and com.dt == 0.0:
+            logger.info("WARNING: Ref is temporal. BUT Ref time delta is: " + str(ref.dt))
+        elif np.log10(ref.dt/com.dt) > 0.5:
             com = com.coarsenInTime(ref.time_bnds,window=window)
             
         # Time bounds of the reference dataset
@@ -1683,6 +1687,9 @@ def MakeComparable(ref,com,**keywords):
             logger.debug(msg)
             raise VarsNotComparable()        
         if not np.allclose(ref.time_bnds,com.time_bnds,atol=0.75*ref.dt):
+            logger.debug("ref.time_bnd: " + str(ref.time_bnds))
+            logger.debug("com.time_bnd: " + str(com.time_bnds))
+            logger.debug("ref time delta: " + str(ref.dt))
             msg  = "%s Datasets are defined at different times" % logstring
             logger.debug(msg)
             raise VarsNotComparable()

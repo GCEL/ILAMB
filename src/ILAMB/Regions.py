@@ -99,6 +99,7 @@ class Regions(object):
                 ids = np.ma.compressed(np.unique(v[...]))
                 assert ids.max() < lbl.size
                 for i in ids:
+                    print i
                     label = lbl[i].lower()
                     name  = nam[i]
                     mask  = v[...].data != i
