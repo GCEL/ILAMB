@@ -365,7 +365,7 @@ class Confrontation(object):
                             limits[pname]["max"]  = -1e20
                             limits[pname]["unit"] = post.UnitStringToMatplotlib(var.getncattr("units"))
                         limits[pname]["min"] = min(limits[pname]["min"],var.getncattr(min_str))
-                        limits[pname]["max"] = max(limits[pname]["max"],var.getncattr(max_str))  # 40 to fix these limits
+                        limits[pname]["max"] = max(limits[pname]["max"],var.getncattr(max_str))
                     elif time_opts.has_key(pname):
                         if not limits.has_key(pname): limits[pname] = {}
                         if not limits[pname].has_key(region):
@@ -374,7 +374,7 @@ class Confrontation(object):
                             limits[pname][region]["max"]  = -1e20
                             limits[pname][region]["unit"] = post.UnitStringToMatplotlib(var.getncattr("units"))
                         limits[pname][region]["min"] = min(limits[pname][region]["min"],var.getncattr("min"))
-                        limits[pname][region]["max"] = max(limits[pname][region]["max"],var.getncattr("max"))  # 40 to fix limits
+                        limits[pname][region]["max"] = max(limits[pname][region]["max"],var.getncattr("max"))
                     if not prune and "Benchmark" in fname and pname == "timeint":
                         prune = True
                         self.pruneRegions(Variable(filename      = fname,
@@ -391,7 +391,7 @@ class Confrontation(object):
             
             # Determine plot limits and colormap
             if opts["sym"]:
-                vabs = 40.0# max(abs(limits[pname]["min"]),abs(limits[pname]["min"]))
+                vabs =  max(abs(limits[pname]["min"]),abs(limits[pname]["min"]))
                 limits[pname]["min"] = -vabs
                 limits[pname]["max"] =  vabs
 

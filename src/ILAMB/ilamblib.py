@@ -1510,7 +1510,7 @@ def ClipTime(v,t0,tf):
         if end   >= v.time.size-1:
             end   = v.time.size-1
             break
-    v.time      = v.time     [begin:(end+1)    ]   # HACK: removed: end+1
+    v.time      = v.time     [begin:(end+1)    ]
     v.time_bnds = v.time_bnds[begin:(end+1),...]
     v.data      = v.data     [begin:(end+1),...]
     return v
@@ -1613,6 +1613,7 @@ def MakeComparable(ref,com,**keywords):
     # If the datasets are both spatial, ensure that both represent the
     # same spatial area and trim the datasets if not.
     if ref.spatial and com.spatial:
+
         logger.info("Both datasets are spatial.")
         lat_bnds = (max(ref.lat_bnds[ 0,0],com.lat_bnds[ 0,0],extents[0,0]),
                     min(ref.lat_bnds[-1,1],com.lat_bnds[-1,1],extents[0,1]))
