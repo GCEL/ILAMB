@@ -90,6 +90,8 @@ class Confrontation(object):
         self.plot_unit      = keywords.get("plot_unit",None)
         self.space_mean     = keywords.get("space_mean",True)        
         self.relationships  = keywords.get("relationships",None)
+        self.uncertainty    = keywords.get("uncertainty", None)
+
         self.keywords       = keywords
         self.extents        = np.asarray([[-90.,+90.],[-180.,+180.]])
         
@@ -152,6 +154,15 @@ class Confrontation(object):
             pages.append(post.HtmlPage("Relationships","Relationships"))
             pages[-1].setHeader("CNAME / RNAME / MNAME")
             pages[-1].setSections(list(self.relationships))
+
+        # Uncertainty page
+        print("Looking for uncertainty keyword")
+        if self.uncertainty is not None:
+            print("Creating placeholder for uncertainty")
+            pages.append(post.HtmlPage("Uncertainty", "Uncertainty"))
+            pages[-1].setHeader("CNAME / RNAME / MNAME")
+            pages[-1].setSections(list(self.uncertainty))
+
         pages.append(post.HtmlAllModelsPage("AllModels","All Models"))
         pages[-1].setHeader("CNAME / RNAME / MNAME")
         pages[-1].setSections([])

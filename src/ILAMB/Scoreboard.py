@@ -38,6 +38,7 @@ class Node(object):
         self.plot_unit           = None
         self.space_mean          = True
         self.relationships       = None
+        self.uncertainty         = None
         self.ctype               = None
         self.regions             = None
         self.skip_rmse           = False
@@ -288,6 +289,14 @@ class Scoreboard():
             #global_print_node_string = ""
             #TraversePreorder(rel_tree,PrintNode)
             #print global_print_node_string
+
+        # Create a tree for the uncertainty plots (mirrors the hack above, which works quite well.)
+        #uncertainty_tree = GenerateUncertaintyTree(self,M)
+        has_uncertainty = True
+
+        if has_uncertainty:
+            #GenerateUncertaintySummaryFigure()
+            nav = """<li><a href="#pageUncertainty">Uncertainty</a></li>"""
 
         from ILAMB.generated_version import version as ilamb_version
         html = r"""
@@ -702,4 +711,8 @@ def GenerateRelationshipTree(S,M):
 
     return rel_tree
 
-    
+def GenerateUncertaintySummaryFigure():
+    pass
+
+def GenerateUncertaintyTree():
+    pass 
